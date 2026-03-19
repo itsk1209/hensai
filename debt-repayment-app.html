@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>返済計画ナビ</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0d0f14; --surface:#161a23; --surface2:#1e2433; --border:#2a3045;
+  --accent:#4f8ef7; --accent3:#4fcea8; --text:#e8ecf5; --text2:#8b95b0;
+  --text3:#5a6278; --danger:#f74f4f; --success:#4fcea8; --warn:#f7b84f;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-serif;font-size:14px;line-height:1.5;}
+.app{max-width:900px;margin:0 auto;padding:20px 16px 60px;}
+
+header{margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--border);}
+header h1{font-size:1.2rem;font-weight:700;}
+header p{font-size:0.73rem;color:var(--text3);margin-top:3px;}
+
+.section{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:14px;}
+.sec-title{font-size:0.67rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:14px;}
+
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+@media(max-width:480px){.form-grid{grid-template-columns:1fr;}}
+.field label{display:block;font-size:0.72rem;color:var(--text2);margin-bottom:4px;}
+.field input{
+  width:100%;background:var(--bg);border:1px solid var(--border);
+  color:var(--text);border-radius:8px;padding:8px 11px;
+  font-size:0.88rem;font-family:'DM Mono',monospace;outline:none;
+  transition:border-color 0.15s;-moz-appearance:textfield;
+}
+.field input::-webkit-outer-spin-button,
+.field input::-webkit-inner-spin-button{-webkit-appearance:none;}
+.field input:focus{border-color:var(--accent);}
+.hint{font-size:0.67rem;color:var(--text3);margin-top:3px;}
+
+.btn-primary{
+  width:100%;margin-top:12px;padding:11px;
+  background:var(--accent);color:#fff;border:none;
+  border-radius:8px;font-size:0.88rem;font-weight:700;
+  font-family:'Noto Sans JP',sans-serif;cursor:pointer;transition:opacity 0.15s;
+}
+.btn-primary:hover{opacity:0.87;}
+
+/* COMPLETION */
+.completion-bar{
+  background:linear-gradient(135deg,rgba(79,206,168,0.07),rgba(79,142,247,0.07));
+  border:1px solid rgba(79,206,168,0.22);border-radius:10px;
+  padding:13px 16px;display:flex;align-items:center;gap:12px;margin-bottom:12px;
+}
+.comp-icon{font-size:1.5rem;flex-shrink:0;}
+.comp-date{font-family:'DM Mono',monospace;font-size:0.98rem;color:var(--success);font-weight:500;}
+.comp-sub{font-size:0.71rem;color:var(--text2);margin-top:2px;}
+
+/* STATS */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;}
+@media(max-width:560px){.stats-grid{grid-template-columns:repeat(2,1fr);}}
+.stat{background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:10px 12px;}
+.stat-label{font-size:0.63rem;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-bottom:3px;}
+.stat-value{font-family:'DM Mono',monospace;font-size:1rem;font-weight:500;}
+.stat-sub{font-size:0.63rem;color:var(--text3);margin-top:1px;}
+.blue{color:var(--accent);}.red{color:var(--danger);}.yellow{color:var(--warn);}
+
+/* PROGRESS */
+.prog-wrap{margin-bottom:12px;}
+.prog-label{display:flex;justify-content:space-between;font-size:0.72rem;color:var(--text2);margin-bottom:5px;}
+.prog-bar{height:6px;background:var(--surface2);border-radius:99px;overflow:hidden;}
+.prog-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--accent),var(--accent3));transition:width 0.5s;}
+
+/* TABLE */
+.table-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:14px;}
+.table-head{
+  padding:12px 16px;border-bottom:1px solid var(--border);
+  display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;
+}
+.table-title{font-size:0.67rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text3);}
+.legend{display:flex;gap:10px;font-size:0.68rem;align-items:center;}
+.leg-a{color:var(--success);}
+.leg-p{color:var(--accent);}
+
+.table-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;}
+th{
+  background:var(--surface2);color:var(--text3);
+  font-size:0.63rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;
+  padding:8px 10px;text-align:right;border-bottom:1px solid var(--border);white-space:nowrap;
+}
+th:first-child,th:nth-child(2){text-align:left;}
+td{
+  padding:7px 10px;border-bottom:1px solid rgba(42,48,69,0.35);
+  font-family:'DM Mono',monospace;font-size:0.78rem;
+  text-align:right;color:var(--text2);vertical-align:middle;
+}
+td:first-child{text-align:center;color:var(--text3);font-size:0.7rem;}
+td:nth-child(2){text-align:left;font-family:'Noto Sans JP',sans-serif;font-size:0.75rem;color:var(--text);white-space:nowrap;}
+tr:hover td{background:rgba(79,142,247,0.025);}
+tr.is-actual td{background:rgba(79,206,168,0.04);}
+tr.is-actual-row td{background:rgba(79,206,168,0.04);}
+
+/* インライン入力 */
+.plan-input, .actual-input{
+  background:var(--bg);border:1px solid var(--border);
+  color:var(--text);border-radius:6px;padding:5px 8px;
+  font-size:0.78rem;font-family:'DM Mono',monospace;
+  outline:none;width:110px;text-align:right;
+  transition:border-color 0.15s;-moz-appearance:textfield;
+}
+.plan-input::-webkit-outer-spin-button,
+.plan-input::-webkit-inner-spin-button{-webkit-appearance:none;}
+.actual-input::-webkit-outer-spin-button,
+.actual-input::-webkit-inner-spin-button{-webkit-appearance:none;}
+.plan-input:focus{border-color:var(--accent);}
+.actual-input:focus{border-color:var(--success);}
+.plan-input.edited{border-color:rgba(79,142,247,0.6);background:rgba(79,142,247,0.06);}
+.actual-input.has-value{border-color:rgba(79,206,168,0.5);background:rgba(79,206,168,0.06);}
+
+.ci{color:var(--warn)!important;}
+.cp{color:var(--accent3)!important;}
+.cr{color:var(--accent)!important;}
+.badge{display:inline-block;font-size:0.58rem;padding:1px 5px;border-radius:3px;margin-left:3px;vertical-align:middle;font-family:'Noto Sans JP',sans-serif;}
+.ba{background:rgba(79,206,168,0.18);color:var(--success);}
+.bp{background:rgba(79,142,247,0.14);color:var(--accent);}
+
+.empty{text-align:center;padding:36px 20px;color:var(--text3);font-size:0.82rem;}
+.empty .ico{font-size:1.8rem;margin-bottom:8px;}
+
+/* 一括設定エリア */
+.bulk-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px;}
+.bulk-row label{font-size:0.72rem;color:var(--text2);white-space:nowrap;}
+.bulk-input{
+  background:var(--bg);border:1px solid var(--border);
+  color:var(--text);border-radius:7px;padding:7px 10px;
+  font-size:0.84rem;font-family:'DM Mono',monospace;
+  outline:none;width:130px;-moz-appearance:textfield;
+}
+.bulk-input::-webkit-outer-spin-button,
+.bulk-input::-webkit-inner-spin-button{-webkit-appearance:none;}
+.btn-sm{
+  padding:7px 14px;border:none;border-radius:7px;
+  font-size:0.78rem;font-weight:700;font-family:'Noto Sans JP',sans-serif;
+  cursor:pointer;transition:opacity 0.15s;white-space:nowrap;
+}
+.btn-sm:hover{opacity:0.85;}
+.btn-blue{background:rgba(79,142,247,0.18);color:var(--accent);}
+.btn-gray{background:var(--surface2);color:var(--text2);}
+</style>
+</head>
+<body>
+<div class="app">
+
+<header>
+  <h1>💴 返済計画ナビ</h1>
+  <p>毎月25日引落 ／ 実日数利息計算 ／ 月ごとに返済額を設定・変更可能</p>
+</header>
+
+<!-- 借入情報 -->
+<div class="section">
+  <div class="sec-title">借入情報</div>
+  <div class="form-grid">
+    <div class="field">
+      <label>元金（円）</label>
+      <input type="number" id="principal" placeholder="例: 500000" min="0">
+    </div>
+    <div class="field">
+      <label>年利（%）</label>
+      <input type="number" id="rate" value="13.5" step="0.1" min="0">
+      <div class="hint">利息 ＝ 残高 × 年利 × 実日数 ÷ 365</div>
+    </div>
+    <div class="field">
+      <label>基本返済額（円）</label>
+      <input type="number" id="monthly" placeholder="例: 20000" min="0">
+      <div class="hint">各月で個別変更できます</div>
+    </div>
+    <div class="field">
+      <label>借入日</label>
+      <input type="date" id="startDate">
+      <div class="hint">初回引落は翌月25日</div>
+    </div>
+  </div>
+  <button class="btn-primary" onclick="initSchedule()">スケジュールを生成する</button>
+</div>
+
+<!-- 結果 -->
+<div id="results">
+  <div class="empty">
+    <div class="ico">📅</div>
+    <p>借入情報を入力して「スケジュールを生成する」を押してください</p>
+  </div>
+</div>
+
+</div>
+<script>
+// ── 状態 ────────────────────────────────
+let schedule = []; // {no, payDate, days, defaultPayment, plannedPayment, actualPayment|null, interest, pPay, balance, isActual}
+let principal = 0, annualRate = 0, defaultMonthly = 0;
+
+// ── ユーティリティ ───────────────────────
+function parseDate(s){const[y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d);}
+function toDateStr(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+function daysBetween(a,b){return Math.round((b-a)/86400000);}
+function addMonth25(d){return new Date(d.getFullYear(),d.getMonth()+1,25);}
+function dateJa(s){const[y,m,d]=s.split('-').map(Number);return `${y}年${m}月${d}日`;}
+function N(n){return Math.round(n).toLocaleString('ja-JP');}
+
+// ── スケジュール再計算（plannedPayment・actualPayment を反映） ──
+function recalc(){
+  const rate = annualRate/100;
+  let bal = principal;
+  let prev = parseDate(document.getElementById('startDate').value);
+
+  for(let i=0;i<schedule.length;i++){
+    const row = schedule[i];
+    const payDay = parseDate(row.payDate);
+    const days = daysBetween(prev, payDay);
+    const interest = Math.round(bal * rate * days / 365);
+    row.days = days;
+    row.interest = interest;
+
+    // 実績があれば実績、なければ計画額
+    const useAmount = (row.actualPayment != null) ? row.actualPayment : row.plannedPayment;
+    let payment = useAmount;
+    if(payment > bal + interest) payment = Math.ceil(bal + interest);
+    const pPay = Math.max(0, payment - interest);
+    const newBal = Math.max(0, Math.round(bal - pPay));
+
+    row.payment = payment;
+    row.pPay = pPay;
+    row.balance = newBal;
+    row.isActual = (row.actualPayment != null);
+
+    prev = payDay;
+    bal = newBal;
+    if(newBal === 0) {
+      // 完済: 以降を切り捨て
+      schedule = schedule.slice(0, i+1);
+      break;
+    }
+  }
+
+  // 残高が残っていたら行を追加（計画変更で回数が増える場合）
+  const lastRow = schedule[schedule.length-1];
+  if(lastRow && lastRow.balance > 0){
+    const rate = annualRate/100;
+    let bal = lastRow.balance;
+    let prevDate = parseDate(lastRow.payDate);
+    let payDay = addMonth25(prevDate);
+    for(let i=0;i<600;i++){
+      if(bal<1) break;
+      const days = daysBetween(prevDate, payDay);
+      const interest = Math.round(bal * rate * days / 365);
+      let payment = defaultMonthly;
+      if(payment > bal+interest) payment = Math.ceil(bal+interest);
+      const pPay = Math.max(0, payment - interest);
+      const newBal = Math.max(0, Math.round(bal - pPay));
+      schedule.push({
+        no: schedule.length+1,
+        payDate: toDateStr(payDay),
+        days, interest, payment, pPay, balance: newBal,
+        plannedPayment: defaultMonthly,
+        actualPayment: null,
+        isActual: false
+      });
+      prevDate = new Date(payDay);
+      bal = newBal;
+      payDay = addMonth25(payDay);
+    }
+  }
+
+  renderResults();
+}
+
+// ── 初期生成 ────────────────────────────
+function initSchedule(){
+  principal = parseFloat(document.getElementById('principal').value);
+  annualRate = parseFloat(document.getElementById('rate').value);
+  defaultMonthly = parseFloat(document.getElementById('monthly').value);
+  const startDate = document.getElementById('startDate').value;
+
+  if(!principal||!annualRate||!defaultMonthly||!startDate){alert('すべて入力してください');return;}
+  const estMI = principal*(annualRate/100)/12;
+  if(defaultMonthly <= estMI){
+    alert(`返済額が月利の目安（約${Math.round(estMI).toLocaleString()}円）以下です。完済できません。`);return;
+  }
+
+  // スケジュール生成
+  schedule = [];
+  const rate = annualRate/100;
+  let bal = principal;
+  let prev = parseDate(startDate);
+  let payDay = addMonth25(prev);
+
+  for(let i=0;i<600;i++){
+    if(bal<1) break;
+    const days = daysBetween(prev, payDay);
+    const interest = Math.round(bal * rate * days / 365);
+    let payment = defaultMonthly;
+    if(payment > bal+interest) payment = Math.ceil(bal+interest);
+    const pPay = Math.max(0, payment - interest);
+    const newBal = Math.max(0, Math.round(bal - pPay));
+    schedule.push({
+      no:i+1, payDate:toDateStr(payDay), days, interest,
+      payment, pPay, balance:newBal,
+      plannedPayment: defaultMonthly, actualPayment:null, isActual:false
+    });
+    prev = new Date(payDay);
+    bal = newBal;
+    payDay = addMonth25(payDay);
+  }
+
+  renderResults();
+}
+
+// ── 描画 ────────────────────────────────
+function renderResults(){
+  const totalI  = schedule.reduce((s,r)=>s+r.interest,0);
+  const totalP  = schedule.reduce((s,r)=>s+r.payment,0);
+  const n       = schedule.length;
+  const paidN   = schedule.filter(r=>r.isActual).length;
+  const lastAI  = schedule.map(r=>r.isActual).lastIndexOf(true);
+  const curBal  = lastAI>=0 ? schedule[lastAI].balance : principal;
+  const pct     = Math.min(100, Math.round((1-curBal/principal)*100));
+  const compDate= schedule[n-1]?.payDate;
+  const editedN = schedule.filter(r=>!r.isActual && r.plannedPayment !== defaultMonthly).length;
+
+  const html = `
+    <div class="completion-bar">
+      <div class="comp-icon">🏁</div>
+      <div>
+        <div class="comp-date">${compDate?dateJa(compDate):'—'} 完済予定</div>
+        <div class="comp-sub">全 ${n} 回払い ／ 残り ${n-paidN} 回${editedN>0?` ／ 計画変更 ${editedN} 件`:''}</div>
+      </div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat"><div class="stat-label">借入元金</div><div class="stat-value">${N(principal)}</div><div class="stat-sub">円</div></div>
+      <div class="stat"><div class="stat-label">現在残高</div><div class="stat-value red">${N(curBal)}</div><div class="stat-sub">円</div></div>
+      <div class="stat"><div class="stat-label">総支払利息</div><div class="stat-value yellow">${N(totalI)}</div><div class="stat-sub">円（完済まで）</div></div>
+      <div class="stat"><div class="stat-label">総支払額</div><div class="stat-value blue">${N(totalP)}</div><div class="stat-sub">円（完済まで）</div></div>
+    </div>
+
+    <div class="prog-wrap">
+      <div class="prog-label"><span>返済進捗</span><span>${pct}% 完了</span></div>
+      <div class="prog-bar"><div class="prog-fill" style="width:${pct}%"></div></div>
+    </div>
+
+    <div class="table-card">
+      <div class="table-head">
+        <div class="table-title">返済スケジュール一覧</div>
+        <div class="legend">
+          <span class="leg-a">● 実績</span>
+          <span class="leg-p">● 計画</span>
+        </div>
+      </div>
+
+      <!-- 一括設定 -->
+      <div style="padding:10px 16px;border-bottom:1px solid var(--border);background:var(--surface2);">
+        <div style="font-size:0.67rem;color:var(--text3);margin-bottom:7px;letter-spacing:1px;text-transform:uppercase;">一括設定（未実績の回のみ）</div>
+        <div class="bulk-row">
+          <label>返済額</label>
+          <input type="number" class="bulk-input" id="bulkAmount" placeholder="${defaultMonthly.toLocaleString()}" min="0">
+          <label>〜</label>
+          <select id="bulkFrom" style="background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:7px;padding:6px 10px;font-size:0.78rem;outline:none;">
+            <option value="all">全回</option>
+            ${schedule.filter(r=>!r.isActual).map(r=>`<option value="${r.no}">${r.no}回目〜</option>`).join('')}
+          </select>
+          <button class="btn-sm btn-blue" onclick="bulkSet()">一括適用</button>
+          <button class="btn-sm btn-gray" onclick="bulkReset()">リセット</button>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>回</th>
+              <th>支払日</th>
+              <th>日数</th>
+              <th>利息</th>
+              <th>元金充当</th>
+              <th>計画返済額 ✏️</th>
+              <th>実績額 ✅</th>
+              <th>残高</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${schedule.map((r,i)=>{
+              const isEdited = !r.isActual && r.plannedPayment !== defaultMonthly;
+              return `<tr class="${r.isActual?'is-actual-row':''}">
+                <td>${r.no}</td>
+                <td>${dateJa(r.payDate)}</td>
+                <td>${r.days}日</td>
+                <td class="ci">${N(r.interest)}</td>
+                <td class="cp">${N(r.pPay)}</td>
+                <td>
+                  ${r.isActual
+                    ? `<span style="color:var(--text3);font-size:0.75rem;">—</span>`
+                    : `<input type="number" class="plan-input${isEdited?' edited':''}"
+                        data-idx="${i}" value="${r.plannedPayment}"
+                        onchange="onPlanChange(${i},this.value)"
+                        min="0">`
+                  }
+                </td>
+                <td>
+                  <input type="number" class="actual-input${r.actualPayment!=null?' has-value':''}"
+                    data-idx="${i}" value="${r.actualPayment!=null?r.actualPayment:''}"
+                    placeholder="—"
+                    onchange="onActualChange(${i},this.value)"
+                    min="0">
+                </td>
+                <td class="cr">${N(r.balance)}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('results').innerHTML = html;
+}
+
+// ── イベントハンドラ ─────────────────────
+function onPlanChange(idx, val){
+  const v = parseFloat(val);
+  if(!isNaN(v) && v > 0){
+    schedule[idx].plannedPayment = Math.round(v);
+  } else {
+    schedule[idx].plannedPayment = defaultMonthly;
+  }
+  recalc();
+}
+
+function onActualChange(idx, val){
+  const v = parseFloat(val);
+  if(!isNaN(v) && v > 0){
+    schedule[idx].actualPayment = Math.round(v);
+  } else {
+    schedule[idx].actualPayment = null;
+  }
+  recalc();
+}
+
+function bulkSet(){
+  const amount = parseFloat(document.getElementById('bulkAmount').value);
+  const from   = document.getElementById('bulkFrom').value;
+  if(isNaN(amount)||amount<=0){alert('金額を入力してください');return;}
+  schedule.forEach((r,i)=>{
+    if(r.isActual) return;
+    if(from==='all' || r.no >= parseInt(from)){
+      schedule[i].plannedPayment = Math.round(amount);
+    }
+  });
+  recalc();
+}
+
+function bulkReset(){
+  schedule.forEach((r,i)=>{
+    if(!r.isActual) schedule[i].plannedPayment = defaultMonthly;
+  });
+  recalc();
+}
+
+// 今日の日付
+const _t=new Date();
+document.getElementById('startDate').value=`${_t.getFullYear()}-${String(_t.getMonth()+1).padStart(2,'0')}-${String(_t.getDate()).padStart(2,'0')}`;
+</script>
+</body>
+</html>
